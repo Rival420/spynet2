@@ -9,6 +9,8 @@ services:
       - db-data:/var/lib/postgresql/data
     networks:
       - spynet-network
+    ports: 
+      - "5423:5432"
 
   scanner:
     build: ./scanner
