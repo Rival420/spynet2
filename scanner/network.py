@@ -32,11 +32,18 @@ def arp_scan(ip: str) -> bool:
     ans, _ = srp(arp_req, timeout=1, verbose=0)
     return len(ans) > 0
 
-def get_ip_range(target_ip: str) -> list:
+def get_ip_range(target_ip):
+    """Calculate the IP range from the given target."""
     if "-" in target_ip:
         start_ip, end_ip = target_ip.split("-")
-        return list(ipaddress.summarize_address_range(ipaddress.IPv4Address(start_ip.strip()), ipaddress.IPv4Address(end_ip.strip())))
+        ip_range = list(ipaddress.summarize_address_range(
+            ipaddress.IPv4Address(start_ip.strip()), 
+            ipaddress.IPv4Address(end_ip.strip())
+        ))
     elif "/" in target_ip:
-        return list(ipaddress.IPv4Network(target_ip, strict=False))
+        network = ipaddress.IPv4Network(target_ip, strict=False)
+        ip_range = [ip for ip in network.hosts()]  # Exclude network and broadcast addresses
     else:
-        return [ipaddress.IPv4Address(target_ip)]
+        ip_range = [ipaddress.IPv4Address(target_ip)]
+
+    return ip_range

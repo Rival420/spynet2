@@ -2,16 +2,17 @@ import asyncio
 import argparse
 import logging
 import time
-from db import init_db, get_db, engine
+from db import init_db, get_db
 from models import Host, Port
 from network import arp_scan, scan_ports, get_ip_range
 from utils import get_internal_network
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, IntegrityError
+from sqlalchemy.orm import Session
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,  # Set to DEBUG for more detailed logging
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO,  # Set to INFO for less verbose logging
+    format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler()
     ]
@@ -24,11 +25,38 @@ async def scan_host(ip, ports_range, max_concurrency):
     if arp_scan(str(ip)):
         logger.info(f"Host {ip} is alive. Scanning ports...")
         scan_result = await scan_ports(str(ip), ports_range, max_concurrency)
-        logger.info(f"Host {ip} is alive with open ports: {scan_result['ports']}")
+        if scan_result['ports']:
+            logger.info(f"Host {ip} has open ports: {scan_result['ports']}")
+        else:
+            logger.info(f"Host {ip} has no open ports.")
         return {"ip": ip, "ports": scan_result['ports']}
     else:
         logger.info(f"Host {ip} is not alive.")
         return {"ip": ip, "ports": []}
+
+def save_to_db(db: Session, host_data):
+    """Save a single host's data to the database."""
+    logger.info(f"Saving scan results for {host_data['ip']} to the database...")
+    try:
+        host = Host(ip=host_data['ip'])
+        db.add(host)
+        db.commit()
+        logger.info(f"Added host {host.ip} to the database.")
+
+        for port in host_data['ports']:
+            port_entry = Port(port=port, host_id=host.id)
+            db.add(port_entry)
+        
+        db.commit()
+        logger.info(f"Scan results for {host_data['ip']} saved to the database.")
+    
+    except IntegrityError as e:
+        logger.error(f"IntegrityError: Could not save data for {host_data['ip']} due to duplicate entry. Error: {e}")
+        db.rollback()
+    
+    except Exception as e:
+        logger.error(f"Unexpected error saving to the database for {host_data['ip']}: {e}")
+        db.rollback()
 
 async def main():
     parser = argparse.ArgumentParser(description='Spynet')
@@ -44,7 +72,7 @@ async def main():
     logger.info(f"Starting scan on IP range: {target_ip} with port range: {target_ports}")
 
     ip_range = get_ip_range(target_ip)
-    logger.debug(f"Number of IPs to scan: {len(ip_range)}")
+    logger.info(f"Number of IPs to scan: {len(ip_range)}")
 
     if target_ports.lower() == "all":
         ports_range = range(1, 65536)
@@ -54,17 +82,17 @@ async def main():
     else:
         ports_range = [int(target_ports)]
 
-    logger.info(f"Number of Ports to scan: {len(ports_range)}")  # Display first 10 ports for brevity
+    logger.info(f"Number of ports to scan: {len(ports_range)}")
 
     retries = 10
     for i in range(retries):
         try:
             logger.info("Attempting to initialize the database...")
-            db = next(get_db())
-            init_db()
+            init_db()  # No arguments needed here
             logger.info("Database initialized.")
 
             # Scan hosts dynamically
+            db = next(get_db())
             for ip in ip_range:
                 scan_result = await scan_host(str(ip), ports_range, max_concurrency)
                 if scan_result['ports']:  # Only save hosts with open ports
@@ -81,20 +109,6 @@ async def main():
             break
     else:
         logger.error("Failed to connect to the database after several attempts.")
-
-def save_to_db(db, host_data):
-    """Save a single host's data to the database."""
-    logger.info(f"Saving scan results for {host_data['ip']} to the database...")
-    host = Host(ip=host_data['ip'])
-    db.add(host)
-    db.commit()
-    logger.info(f"Added host {host.ip} to the database.")
-    for port in host_data['ports']:
-        port_entry = Port(port=port, host_id=host.id)
-        db.add(port_entry)
-        db.commit()
-        logger.info(f"Added port {port_entry.port} for host {host.ip} to the database.")
-    logger.info(f"Scan results for {host_data['ip']} saved to the database.")
 
 if __name__ == "__main__":
     asyncio.run(main())
