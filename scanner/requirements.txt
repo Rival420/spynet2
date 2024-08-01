@@ -1,0 +1,5 @@
+netifaces
+scapy
+sqlalchemy
+asyncio
+psycopg2-binary

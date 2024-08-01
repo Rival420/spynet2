@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spynet Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
+    <script>
+        async function fetchResults() {
+            const response = await fetch('/api/hosts');
+            const data = await response.json();
+            const table = document.querySelector('table');
+            data.forEach(host => {
+                const row = table.insertRow();
+                const cell1 = row.insertCell(0);
+                const cell2 = row.insertCell(1);
+                cell1.innerHTML = host.ip;
+                cell2.innerHTML = host.ports.join(', ');
+            });
+        }
+
+        window.onload = fetchResults;
+    </script>
+</head>
+<body>
+    <h1>Network Scan Results</h1>
+    <table>
+        <tr>
+            <th>IP Address</th>
+            <th>Open Ports</th>
+        </tr>
+    </table>
+</body>
+</html>
