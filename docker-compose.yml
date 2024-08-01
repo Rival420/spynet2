@@ -7,8 +7,6 @@ services:
       POSTGRES_DB: scanner
     volumes:
       - db-data:/var/lib/postgresql/data
-    networks:
-      - spynet_default
 
   scanner:
     build: ./scanner
@@ -28,8 +26,6 @@ services:
       - DATABASE_URL=postgresql://username:password123@db:5432/scanner
     ports:
       - "5000:5000"
-    networks:
-      - spynet_default
 
   web:
     image: nginx:alpine
@@ -39,8 +35,6 @@ services:
       - ./web:/usr/share/nginx/html
     depends_on:
       - api
-    networks:
-      - spynet_default
 
 volumes:
   db-data:
