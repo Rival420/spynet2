@@ -17,7 +17,9 @@ services:
       - DATABASE_URL=postgresql://username:password123@localhost:5432/scanner
 
   api:
-    build: ./api
+    build:
+      context: .
+      dockerfile: api/Dockerfile
     depends_on:
       - db
     environment:
