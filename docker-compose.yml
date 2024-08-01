@@ -10,7 +10,6 @@ services:
 
   scanner:
     build: ./scanner
-    network_mode: host
     environment:
       - DATABASE_URL=postgresql://username:password123@localhost:5432/scanner
     networks:
