@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   db:
     image: postgres:13
@@ -7,34 +9,38 @@ services:
       POSTGRES_DB: scanner
     volumes:
       - db-data:/var/lib/postgresql/data
+    networks:
+      - spynet-network
 
   scanner:
     build: ./scanner
+    network_mode: host
     environment:
       - DATABASE_URL=postgresql://username:password123@localhost:5432/scanner
-    networks:
-      - host
 
   api:
-    build:
-      context: .
-      dockerfile: api/Dockerfile
+    build: ./api
     depends_on:
       - db
     environment:
       - DATABASE_URL=postgresql://username:password123@db:5432/scanner
+    networks:
+      - spynet-network
     ports:
       - "5000:5000"
 
   web:
     image: nginx:alpine
-    ports:
-      - "80:80"
     volumes:
       - ./web:/usr/share/nginx/html
-    depends_on:
-      - api
+    networks:
+      - spynet-network
+    ports:
+      - "80:80"
 
 volumes:
   db-data:
 
+networks:
+  spynet-network:  # Ensure consistent naming
+    driver: bridge
