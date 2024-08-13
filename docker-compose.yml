@@ -8,18 +8,16 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
-      spynet-network:
-        ipv4_address: 172.19.0.10
+      - spynet-network
     ports: 
       - "5432:5432"
 
   scanner:
     build: ./scanner
     networks:
-      spynet-network:
-        ipv4_address: 172.19.0.11
+      - spynet-network
     environment:
-      - DATABASE_URL=postgresql://username:password123@172.19.0.10:5432/scanner
+      - DATABASE_URL=postgresql://username:password123@db:5432/scanner
     cap_add:
       - NET_RAW
       - NET_ADMIN
@@ -31,10 +29,9 @@ services:
     depends_on:
       - db
     environment:
-      - DATABASE_URL=postgresql://username:password123@172.19.0.10:5432/scanner
+      - DATABASE_URL=postgresql://username:password123@db:5432/scanner
     networks:
-      spynet-network:
-        ipv4_address: 172.19.0.12
+      - spynet-network
     ports:
       - "5000:5000"
 
@@ -43,7 +40,7 @@ services:
     volumes:
       - ./web:/usr/share/nginx/html
     networks:
-      spynet-network
+      - spynet-network
     ports:
       - "80:80"
 
