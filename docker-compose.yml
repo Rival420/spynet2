@@ -8,15 +8,18 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
-      - spynet-network
+      spynet-network:
+        ipv4_address: 172.19.0.10
     ports: 
-      - "5423:5432"
+      - "5432:5432"
+
 
   scanner:
     build: ./scanner
-    network_mode: host
+    networks:
+      - spynet-network
     environment:
-      - DATABASE_URL=postgresql://username:password123@127.0.0.1:5432/scanner
+      - DATABASE_URL=postgresql://username:password123@172.19.0.10:5432/scanner
     cap_add:
       - NET_RAW
       - NET_ADMIN
@@ -47,5 +50,8 @@ volumes:
   db-data:
 
 networks:
-  spynet-network:  # Ensure consistent naming
+  spynet-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16
