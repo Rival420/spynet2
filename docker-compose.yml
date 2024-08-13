@@ -17,6 +17,9 @@ services:
     network_mode: host
     environment:
       - DATABASE_URL=postgresql://username:password123@127.0.0.1:5432/scanner
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
 
   api:
     build:
