@@ -14,15 +14,9 @@ services:
 
   scanner:
     build: ./scanner
-    networks:
-      - spynet-network
-    cap_add:
-      - NET_RAW
-      - NET_ADMIN
+    network_mode: host
     environment:
-      - DATABASE_URL=postgresql://username:password123@db:5432/scanner
-    command: --network host python scanner.py
-
+      - DATABASE_URL=postgresql://username:password123@127.0.0.1:5432/scanner
 
   api:
     build:
